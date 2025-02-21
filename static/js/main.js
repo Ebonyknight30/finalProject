@@ -1,23 +1,39 @@
-// Sample Project Structure for a DnD Map Site
+document.addEventListener("DOMContentLoaded", () => {
+    const socket = io();
+    const mapContainer = document.getElementById("mapContainer");
+    const fogLayer = document.getElementById("fogLayer");
+    const fileInput = document.getElementById("mapUpload");
+    const uploadButton = document.getElementById("uploadButton");
 
-// Import necessary libraries
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import path from 'path';
+    uploadButton.addEventListener("click", () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append("mapImage", file);
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.imagePath) {
+                    mapContainer.style.backgroundImage = `url(${data.imagePath})`;
+                    mapContainer.style.backgroundSize = "cover";
+                }
+            })
+            .catch(err => console.error("Error uploading map image:", err));
+        } else {
+            console.error("No file selected");
+        }
+    });
 
-// Serve static files (frontend)
-app.use(express.static(path.join(__dirname, 'public')));
+    socket.on("updateGame", (gameData) => {
+        console.log("Game updated:", gameData);
+    });
 
-// Store active games and player positions
-let games = {};
-
-io.on('connection', (socket) => {
-    console.log('A player connected');
+    // Server-side game logic
+    const games = {};
 
     socket.on('joinGame', ({ gameId, playerId }) => {
         if (!games[gameId]) {
@@ -41,8 +57,4 @@ io.on('connection', (socket) => {
             io.to(gameId).emit('updateGame', games[gameId]);
         }
     });
-});
-
-server.listen(3000, () => {
-    console.log('Server running on port 3000');
 });
