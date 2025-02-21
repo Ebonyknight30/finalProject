@@ -16,6 +16,11 @@
             background-color: #222;
             color: white;
         }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
         #mapContainer {
             position: relative;
             width: 800px;
@@ -41,8 +46,11 @@
 </head>
 <body>
     <h1>DnD Map Viewer</h1>
-    <input type="file" id="mapUpload" accept="image/*" style="margin-bottom: 10px;">
-    <button id="uploadButton">Upload Map</button>
+    <div class="button-container">
+        <button id="addPlayerTokenButton">Add Player Token</button>
+        <input type="file" id="mapUpload" accept="image/*">
+        <button id="uploadButton">Upload Map</button>
+    </div>
     <select id="mapSelect" style="margin-bottom: 10px;"></select>
     <button id="selectMapButton">Select Map</button>
     <div id="mapContainer">
