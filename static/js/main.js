@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import multer from 'multer';
+import Pusher from 'pusher';
 
 const app = express();
-const imgDir = path.join(__dirname, 'static', 'img');
+const imgDir = path.join(__dirname, 'static', 'img', 'maps');
 
 // Set up multer storage configuration
 const storage = multer.diskStorage({
@@ -18,17 +19,28 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Initialize Pusher
+const pusher = new Pusher({
+    appId: "YOUR_APP_ID",
+    key: "YOUR_KEY",
+    secret: "YOUR_SECRET",
+    cluster: "YOUR_CLUSTER",
+    useTLS: true
+});
+
 // Endpoint to handle image uploads
 app.post('/upload', upload.single('mapImage'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
     }
-    res.json({ imagePath: `/static/img/${req.file.filename}` });
+    const imagePath = `/static/img/maps/${req.file.filename}`;
+    pusher.trigger("map-channel", "map-updated", { imagePath });
+    res.json({ imagePath });
 });
 
 // Endpoint to list available map images
 app.get('/maps', (req, res) => {
-    fs.readdir(imgDir, (err, files) => {
+    fs.readdir(path.join(__dirname, 'static', 'img', 'maps'), (err, files) => {
         if (err) {
             console.error("Error reading map directory:", err);
             return res.status(500).json({ error: "Failed to retrieve maps" });
@@ -39,16 +51,42 @@ app.get('/maps', (req, res) => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    const socket = io();
+    const pusherClient = new Pusher("YOUR_KEY", {
+        cluster: "YOUR_CLUSTER"
+    });
+    
+    const channel = pusherClient.subscribe("map-channel");
+    channel.bind("map-updated", (data) => {
+        mapContainer.style.backgroundImage = `url(${data.imagePath})`;
+        mapContainer.style.backgroundSize = "cover";
+    });
+
     const mapContainer = document.getElementById("mapContainer");
     const fogLayer = document.getElementById("fogLayer");
     const fileInput = document.getElementById("mapUpload");
     const uploadButton = document.getElementById("uploadButton");
     const mapSelect = document.getElementById("mapSelect");
     const selectMapButton = document.getElementById("selectMapButton");
-    const addPlayerButton = document.createElement("button");
-    addPlayerButton.textContent = "Add Player Token";
-    document.body.insertBefore(addPlayerButton, mapContainer);
+    const addPlayerButton = document.getElementById("addPlayerTokenButton");
+
+    // Function to refresh map dropdown list
+    function refreshMapList() {
+        fetch("/maps")
+            .then(response => response.json())
+            .then(maps => {
+                mapSelect.innerHTML = ""; // Clear current options
+                maps.forEach(map => {
+                    const option = document.createElement("option");
+                    option.value = `/static/img/maps/${map}`;
+                    option.textContent = map;
+                    mapSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error("Error fetching maps:", err));
+    }
+
+    // Refresh map list on page load
+    refreshMapList();
 
     addPlayerButton.addEventListener("click", () => {
         const playerToken = document.createElement("div");
@@ -74,19 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
         mapContainer.appendChild(playerToken);
     });
 
-    // Fetch available maps from the server and populate the dropdown
-    fetch("/maps")
-        .then(response => response.json())
-        .then(maps => {
-            maps.forEach(map => {
-                const option = document.createElement("option");
-                option.value = `/static/img/${map}`;
-                option.textContent = map;
-                mapSelect.appendChild(option);
-            });
-        })
-        .catch(err => console.error("Error fetching maps:", err));
-
     // Upload map functionality
     uploadButton.addEventListener("click", () => {
         const file = fileInput.files[0];
@@ -103,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.imagePath) {
                     mapContainer.style.backgroundImage = `url(${data.imagePath})`;
                     mapContainer.style.backgroundSize = "cover";
+                    refreshMapList(); // Refresh dropdown after upload
                 }
             })
             .catch(err => console.error("Error uploading map image:", err));
@@ -117,36 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectedMap) {
             mapContainer.style.backgroundImage = `url(${selectedMap})`;
             mapContainer.style.backgroundSize = "cover";
-        }
-    });
-
-    socket.on("updateGame", (gameData) => {
-        console.log("Game updated:", gameData);
-    });
-
-    // Server-side game logic
-    const games = {};
-
-    socket.on('joinGame', ({ gameId, playerId }) => {
-        if (!games[gameId]) {
-            games[gameId] = { players: {}, fog: [] };
-        }
-        games[gameId].players[playerId] = { x: 0, y: 0 };
-        socket.join(gameId);
-        io.to(gameId).emit('updateGame', games[gameId]);
-    });
-
-    socket.on('movePlayer', ({ gameId, playerId, x, y }) => {
-        if (games[gameId] && games[gameId].players[playerId]) {
-            games[gameId].players[playerId] = { x, y };
-            io.to(gameId).emit('updateGame', games[gameId]);
-        }
-    });
-
-    socket.on('updateFog', ({ gameId, fogData }) => {
-        if (games[gameId]) {
-            games[gameId].fog = fogData;
-            io.to(gameId).emit('updateGame', games[gameId]);
         }
     });
 });
