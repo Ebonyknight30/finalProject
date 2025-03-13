@@ -1,8 +1,6 @@
-import Pusher from 'pusher-js';
-
 document.addEventListener("DOMContentLoaded", () => {
-    const pusherClient = new Pusher("YOUR_KEY", {
-        cluster: "YOUR_CLUSTER"
+    const pusherClient = new window.Pusher("1f0e7b10485527772cd5", {
+        cluster: "us3"
     });
     
     const channel = pusherClient.subscribe("map-channel");
