@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const uploadButton = document.getElementById("uploadButton");
     const mapSelect = document.getElementById("mapSelect");
     const selectMapButton = document.getElementById("selectMapButton");
-    const mediaLibraryButton = document.getElementById("mediaLibraryButton");
     const addPlayerButton = document.getElementById("addPlayerTokenButton");
     
     const page3Button = document.createElement("button");
@@ -44,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             },
         },
-        document.getElementById("mediaLibraryButton") // Opens media library when clicked
+        document.getElementById("selectMapButton") // Opens media library when clicked
     );
 
     addPlayerButton.addEventListener("click", () => {
