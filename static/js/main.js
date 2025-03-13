@@ -25,15 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.body.appendChild(page3Button);
 
-    // Create and append the Open Media Library button
-    const openMediaLibraryButton = document.createElement("button");
-    openMediaLibraryButton.textContent = "Open Media Library";
-    openMediaLibraryButton.style.marginLeft = "10px";
-    openMediaLibraryButton.addEventListener("click", () => {
-        cloudinaryML.show(); // Opens the Cloudinary Media Library
-    });
-    selectMapButton.parentNode.insertBefore(openMediaLibraryButton, selectMapButton.nextSibling);
-
     // Cloudinary Media Library Widget
     const cloudinaryML = cloudinary.createMediaLibrary(
         {
@@ -64,8 +55,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
             },
-        },
+        }
     );
+
+    // Create and append the Open Media Library button
+    const openMediaLibraryButton = document.createElement("button");
+    openMediaLibraryButton.textContent = "Open Media Library";
+    openMediaLibraryButton.style.marginLeft = "10px";
+    openMediaLibraryButton.addEventListener("click", () => {
+        cloudinaryML.show(); // Opens the Cloudinary Media Library
+    });
+    selectMapButton.parentNode.insertBefore(openMediaLibraryButton, selectMapButton.nextSibling);
 
     addPlayerButton.addEventListener("click", () => {
         const playerToken = document.createElement("div");
