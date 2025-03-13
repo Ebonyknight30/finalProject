@@ -15,7 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const mapSelect = document.getElementById("mapSelect");
     const selectMapButton = document.getElementById("selectMapButton");
     const addPlayerButton = document.getElementById("addPlayerTokenButton");
-    
+
+    // Create and append the PAGE 3 button
     const page3Button = document.createElement("button");
     page3Button.textContent = "PAGE 3";
     page3Button.style.marginTop = "10px";
@@ -23,6 +24,15 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "Page3.html"; // Redirect to Page3.html
     });
     document.body.appendChild(page3Button);
+
+    // Create and append the Open Media Library button
+    const openMediaLibraryButton = document.createElement("button");
+    openMediaLibraryButton.textContent = "Open Media Library";
+    openMediaLibraryButton.style.marginLeft = "10px";
+    openMediaLibraryButton.addEventListener("click", () => {
+        cloudinaryML.show(); // Opens the Cloudinary Media Library
+    });
+    selectMapButton.parentNode.insertBefore(openMediaLibraryButton, selectMapButton.nextSibling);
 
     // Cloudinary Media Library Widget
     const cloudinaryML = cloudinary.createMediaLibrary(
@@ -35,11 +45,23 @@ document.addEventListener("DOMContentLoaded", () => {
             insertHandler: function (data) {
                 if (data.assets.length > 0) {
                     const selectedFile = data.assets[0].secure_url;
-                    mapSelect.innerHTML = ""; // Clear dropdown
-                    const option = document.createElement("option");
-                    option.value = selectedFile;
-                    option.textContent = selectedFile.split("/").pop();
-                    mapSelect.appendChild(option);
+                    
+                    // Check if the file is already in the dropdown
+                    let exists = false;
+                    for (let i = 0; i < mapSelect.options.length; i++) {
+                        if (mapSelect.options[i].value === selectedFile) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    
+                    // Only add new entries to avoid duplicates
+                    if (!exists) {
+                        const option = document.createElement("option");
+                        option.value = selectedFile;
+                        option.textContent = selectedFile.split("/").pop();
+                        mapSelect.appendChild(option);
+                    }
                 }
             },
         },
@@ -75,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (file) {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "map_upload_preset");
+            formData.append("upload_preset", "your_actual_upload_preset");
 
             fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/image/upload", {
                 method: "POST",
@@ -84,8 +106,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(response => response.json())
             .then(data => {
                 if (data.secure_url) {
+                    console.log("Upload successful:", data.secure_url);
                     mapContainer.style.backgroundImage = `url(${data.secure_url})`;
                     mapContainer.style.backgroundSize = "cover";
+
+                    // Add the uploaded map to the dropdown
+                    const option = document.createElement("option");
+                    option.value = data.secure_url;
+                    option.textContent = data.secure_url.split("/").pop();
+                    mapSelect.appendChild(option);
+                } else {
+                    console.error("Upload failed:", data);
                 }
             })
             .catch(err => console.error("Error uploading map image:", err));
