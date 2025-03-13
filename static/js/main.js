@@ -1,5 +1,4 @@
 import Pusher from 'pusher-js';
-import cloudinary from 'cloudinary';
 
 document.addEventListener("DOMContentLoaded", () => {
     const pusherClient = new Pusher("YOUR_KEY", {
@@ -19,30 +18,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectMapButton = document.getElementById("selectMapButton");
     const addPlayerButton = document.getElementById("addPlayerTokenButton");
 
-    cloudinary.config({ 
-        cloud_name: 'dffwgyy4x', 
-        api_key: '525923916383224', 
-        api_secret: 'MZmFjxW8W67YNnFxQNxq5s-f4R4' 
-    });
-
-    // Function to refresh map dropdown list
-    function refreshMapList() {
-        fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/resources/image")
-            .then(response => response.json())
-            .then(data => {
-                mapSelect.innerHTML = ""; // Clear current options
-                data.resources.forEach(map => {
+    // Cloudinary Media Library Widget
+    const cloudinaryML = cloudinary.createMediaLibrary(
+        {
+            cloud_name: "dffwgyy4x",
+            api_key: "525923916383224",
+            multiple: false,
+        },
+        {
+            insertHandler: function (data) {
+                if (data.assets.length > 0) {
+                    const selectedFile = data.assets[0].secure_url;
+                    mapSelect.innerHTML = ""; // Clear dropdown
                     const option = document.createElement("option");
-                    option.value = map.secure_url;
-                    option.textContent = map.public_id;
+                    option.value = selectedFile;
+                    option.textContent = selectedFile.split("/").pop();
                     mapSelect.appendChild(option);
-                });
-            })
-            .catch(err => console.error("Error fetching maps:", err));
-    }
-
-    // Refresh map list on page load
-    refreshMapList();
+                }
+            },
+        },
+        document.getElementById("selectMapButton") // Opens media library when clicked
+    );
 
     addPlayerButton.addEventListener("click", () => {
         const playerToken = document.createElement("div");
@@ -68,13 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
         mapContainer.appendChild(playerToken);
     });
 
-    // Upload map functionality
     uploadButton.addEventListener("click", () => {
         const file = fileInput.files[0];
         if (file) {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "map_upload_preset");
+            formData.append("upload_preset", "YOUR_UPLOAD_PRESET");
 
             fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/image/upload", {
                 method: "POST",
@@ -85,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.secure_url) {
                     mapContainer.style.backgroundImage = `url(${data.secure_url})`;
                     mapContainer.style.backgroundSize = "cover";
-                    refreshMapList(); // Refresh dropdown after upload
                 }
             })
             .catch(err => console.error("Error uploading map image:", err));
@@ -94,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Select map functionality
     selectMapButton.addEventListener("click", () => {
         const selectedMap = mapSelect.value;
         if (selectedMap) {
