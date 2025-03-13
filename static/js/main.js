@@ -1,54 +1,5 @@
-import fs from 'fs';
-import path from 'path';
-import express from 'express';
-import multer from 'multer';
-import Pusher from 'pusher';
-
-const app = express();
-const imgDir = path.join(__dirname, 'static', 'img', 'maps');
-
-// Set up multer storage configuration
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, imgDir); // Save to ./static/img/
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname); // Keep original filename
-    }
-});
-
-const upload = multer({ storage });
-
-// Initialize Pusher
-const pusher = new Pusher({
-    appId: "YOUR_APP_ID",
-    key: "YOUR_KEY",
-    secret: "YOUR_SECRET",
-    cluster: "YOUR_CLUSTER",
-    useTLS: true
-});
-
-// Endpoint to handle image uploads
-app.post('/upload', upload.single('mapImage'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-    }
-    const imagePath = `/static/img/maps/${req.file.filename}`;
-    pusher.trigger("map-channel", "map-updated", { imagePath });
-    res.json({ imagePath });
-});
-
-// Endpoint to list available map images
-app.get('/maps', (req, res) => {
-    fs.readdir(path.join(__dirname, 'static', 'img', 'maps'), (err, files) => {
-        if (err) {
-            console.error("Error reading map directory:", err);
-            return res.status(500).json({ error: "Failed to retrieve maps" });
-        }
-        const imageFiles = files.filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file));
-        res.json(imageFiles);
-    });
-});
+import Pusher from 'pusher-js';
+import cloudinary from 'cloudinary';
 
 document.addEventListener("DOMContentLoaded", () => {
     const pusherClient = new Pusher("YOUR_KEY", {
@@ -57,28 +8,33 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const channel = pusherClient.subscribe("map-channel");
     channel.bind("map-updated", (data) => {
-        mapContainer.style.backgroundImage = `url(${data.imagePath})`;
+        mapContainer.style.backgroundImage = `url(${data.imageUrl})`;
         mapContainer.style.backgroundSize = "cover";
     });
 
     const mapContainer = document.getElementById("mapContainer");
-    const fogLayer = document.getElementById("fogLayer");
     const fileInput = document.getElementById("mapUpload");
     const uploadButton = document.getElementById("uploadButton");
     const mapSelect = document.getElementById("mapSelect");
     const selectMapButton = document.getElementById("selectMapButton");
     const addPlayerButton = document.getElementById("addPlayerTokenButton");
 
+    cloudinary.config({ 
+        cloud_name: 'dffwgyy4x', 
+        api_key: '525923916383224', 
+        api_secret: 'MZmFjxW8W67YNnFxQNxq5s-f4R4' 
+    });
+
     // Function to refresh map dropdown list
     function refreshMapList() {
-        fetch("/maps")
+        fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/resources/image")
             .then(response => response.json())
-            .then(maps => {
+            .then(data => {
                 mapSelect.innerHTML = ""; // Clear current options
-                maps.forEach(map => {
+                data.resources.forEach(map => {
                     const option = document.createElement("option");
-                    option.value = `/static/img/maps/${map}`;
-                    option.textContent = map;
+                    option.value = map.secure_url;
+                    option.textContent = map.public_id;
                     mapSelect.appendChild(option);
                 });
             })
@@ -117,16 +73,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const file = fileInput.files[0];
         if (file) {
             const formData = new FormData();
-            formData.append("mapImage", file);
+            formData.append("file", file);
+            formData.append("upload_preset", "map_upload_preset");
 
-            fetch("/upload", {
+            fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/image/upload", {
                 method: "POST",
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                if (data.imagePath) {
-                    mapContainer.style.backgroundImage = `url(${data.imagePath})`;
+                if (data.secure_url) {
+                    mapContainer.style.backgroundImage = `url(${data.secure_url})`;
                     mapContainer.style.backgroundSize = "cover";
                     refreshMapList(); // Refresh dropdown after upload
                 }
