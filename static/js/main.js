@@ -15,6 +15,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const mapSelect = document.getElementById("mapSelect");
     const selectMapButton = document.getElementById("selectMapButton");
     const addPlayerButton = document.getElementById("addPlayerTokenButton");
+    
+    const page3Button = document.createElement("button");
+    page3Button.textContent = "PAGE 3";
+    page3Button.style.marginTop = "10px";
+    page3Button.addEventListener("click", () => {
+        window.location.href = "Page3.html"; // Redirect to Page3.html
+    });
+    document.body.appendChild(page3Button);
 
     // Cloudinary Media Library Widget
     const cloudinaryML = cloudinary.createMediaLibrary(
@@ -67,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (file) {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "YOUR_UPLOAD_PRESET");
+            formData.append("upload_preset", "map_upload_preset");
 
             fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/image/upload", {
                 method: "POST",
