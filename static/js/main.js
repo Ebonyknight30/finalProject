@@ -65,7 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             },
         },
-        document.getElementById("selectMapButton") // Opens media library when clicked
     );
 
     addPlayerButton.addEventListener("click", () => {
@@ -97,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (file) {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "your_actual_upload_preset");
+            formData.append("upload_preset", "map_upload_preset");
 
             fetch("https://api.cloudinary.com/v1_1/dffwgyy4x/image/upload", {
                 method: "POST",
